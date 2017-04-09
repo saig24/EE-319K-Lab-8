@@ -2,11 +2,14 @@
 // Runs on LM4F120/TM4C123
 // Provide functions that initialize ADC0
 // Last Modified: 3/6/2015 
-// Student names: 
+// Student names: John Sigmon
 // Last modification date:
 
 #include <stdint.h>
 #include "tm4c123gh6pm.h"
+
+extern uint32_t Data;
+
 
 // ADC initialization function 
 // Input: none
@@ -42,16 +45,14 @@ uint32_t ADC_In(void){
 	//read captured value from fifo buffer
 	//clear ris flag using icr reg
 	//return
-	//******check this function output- should be 12 bits.
+	//******check this function output- data should be 12 bits.
 	
-	uint32_t data;
 	ADC0_PSSI_R = 0x0008;
 	while ((ADC0_RIS_R & 0x08) == 0) {};			//wait for conversion
-		data = ADC0_SSFIFO3_R & 0xFFF;					//retrieve data from fifo buffer
-		ADC0_ISC_R = 0x0008;
-
-  return (data); 
-
+		Data = ADC0_SSFIFO3_R & 0xFFF;					//retrieve data from fifo buffer
+		ADC0_ISC_R = 0x0008; 
+		return (Data);
+		
 }
 
 

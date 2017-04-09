@@ -28,19 +28,24 @@ void EnableInterrupts(void);  // Enable interrupts
 #define PF1       (*((volatile uint32_t *)0x40025008))
 #define PF2       (*((volatile uint32_t *)0x40025010))
 #define PF3       (*((volatile uint32_t *)0x40025020))
-// Initialize Port F so PF1, PF2 and PF3 are heartbeats
+
+// Initializes Port F so PF1, PF2 and PF3 are heartbeats
+
 void PortF_Init(void){
 volatile unsigned long delay;
 	SYSCTL_RCGC2_R |= 0x00000020;
 	delay = SYSCTL_RCGCGPIO_R ;
 	GPIO_PORTF_LOCK_R = 0x4C4F434B;   //  unlock GPIO Port F
 	GPIO_PORTF_CR_R = 0x1F;           // allow changes to PF4-0
-	GPIO_PORTF_DIR_R |= 0x00000004;		//Set PF2 to be output
+	GPIO_PORTF_DIR_R |= 0x07;					//Set PF0-2 to be outputs
 	GPIO_PORTF_AFSEL_R = 0x00;				// Turn off Alt Func.
-	GPIO_PORTF_DEN_R |= 0x04;					//Set PF2 to Digital
+	GPIO_PORTF_DEN_R |= 0x07;					//Set PF2 to Digital
 }
+
+
 uint32_t Data;        // 12-bit ADC
 uint32_t Position;    // 32-bit fixed-point 0.001 cm
+
 int main(void){      // single step this program and look at Data
   TExaS_Init();       // Bus clock is 80 MHz 
   ADC_Init();         // turn on ADC, set channel to 1
@@ -89,8 +94,25 @@ int main3(void){
   }
 }   
 int main1(void){
-  TExaS_Init();
-  // your Lab 8
+	
+	//initialize the PLL, LCD
+	
+  DisableInterrupts();
+	TExaS_Init();
+	Sampler_Init(40);
+	ADC_Init();
+	
+	
+	EnableInterrupts();
+	
+	/*
+	 wait for the mailbox flag ADCStatus to be true
+ read the 12-bit ADC sample from the mailbox ADCMail
+ clear the mailbox flag ADCStatus to signify the mailbox is now empty
+ convert the sample into a fixed-point number (variable integer is 0 to 2000)
+ output the fixed-point number on the LCD with units 
+*/
+	
   while(1){
   }
 }
