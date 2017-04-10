@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include "tm4c123gh6pm.h"
 
-extern uint32_t Data;
 
 
 // ADC initialization function 
@@ -46,12 +45,13 @@ uint32_t ADC_In(void){
 	//clear ris flag using icr reg
 	//return
 	//******check this function output- data should be 12 bits.
+uint32_t local_data;
 	
 	ADC0_PSSI_R = 0x0008;
 	while ((ADC0_RIS_R & 0x08) == 0) {};			//wait for conversion
-		Data = ADC0_SSFIFO3_R & 0xFFF;					//retrieve data from fifo buffer
+		local_data = ADC0_SSFIFO3_R & 0xFFF;					//retrieve data from fifo buffer
 		ADC0_ISC_R = 0x0008; 
-		return (Data);
+		return (local_data);
 		
 }
 

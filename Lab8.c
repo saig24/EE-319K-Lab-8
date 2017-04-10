@@ -15,7 +15,15 @@
 #include "ADC.h"
 #include "print.h"
 #include "tm4c123gh6pm.h"
+#include "PLL.h"
 #include "SysTick.h"
+
+#define PF1       (*((volatile uint32_t *)0x40025008))
+#define PF2       (*((volatile uint32_t *)0x40025010))
+#define PF3       (*((volatile uint32_t *)0x40025020))
+
+extern uint32_t ADCStatus;
+extern uint32_t ADCMail;
 
 //*****the first three main programs are for debugging *****
 // main1 tests just the ADC and slide pot, use debugger to see data
@@ -24,23 +32,8 @@
 
 void DisableInterrupts(void); // Disable interrupts
 void EnableInterrupts(void);  // Enable interrupts
-
-#define PF1       (*((volatile uint32_t *)0x40025008))
-#define PF2       (*((volatile uint32_t *)0x40025010))
-#define PF3       (*((volatile uint32_t *)0x40025020))
-
-// Initializes Port F so PF1, PF2 and PF3 are heartbeats
-
-void PortF_Init(void){
-volatile unsigned long delay;
-	SYSCTL_RCGC2_R |= 0x00000020;
-	delay = SYSCTL_RCGCGPIO_R ;
-	GPIO_PORTF_LOCK_R = 0x4C4F434B;   //  unlock GPIO Port F
-	GPIO_PORTF_CR_R = 0x1F;           // allow changes to PF4-0
-	GPIO_PORTF_DIR_R |= 0x07;					//Set PF0-2 to be outputs
-	GPIO_PORTF_AFSEL_R = 0x00;				// Turn off Alt Func.
-	GPIO_PORTF_DEN_R |= 0x07;					//Set PF2 to Digital
-}
+void PortF_Init(void);
+uint32_t Convert(uint32_t input);
 
 
 uint32_t Data;        // 12-bit ADC
@@ -71,9 +64,7 @@ int main2(void){
   }
 }
 
-uint32_t Convert(uint32_t input){
-  return 0;
-}
+
 int main3(void){ 
   TExaS_Init();         // Bus clock is 80 MHz 
   ST7735_InitR(INITR_REDTAB); 
@@ -99,21 +90,33 @@ int main1(void){
 	
   DisableInterrupts();
 	TExaS_Init();
-	Sampler_Init(40);
+	SysTick_Init(40);
 	ADC_Init();
-	
-	
 	EnableInterrupts();
+	while (1){
+		while (ADCStatus != 1){
+		}
+	//read ADCMail
+		ADCStatus = 0;
+	//math to convert ADCMail to fixed point number
+	//send result to LCD function
+		LCD_OutFix(Position);
 	
-	/*
-	 wait for the mailbox flag ADCStatus to be true
- read the 12-bit ADC sample from the mailbox ADCMail
- clear the mailbox flag ADCStatus to signify the mailbox is now empty
- convert the sample into a fixed-point number (variable integer is 0 to 2000)
- output the fixed-point number on the LCD with units 
-*/
 	
-  while(1){
-  }
+	}
 }
 
+void PortF_Init(void){
+volatile unsigned long delay;
+	SYSCTL_RCGC2_R |= 0x00000020;
+	delay = SYSCTL_RCGCGPIO_R ;
+	GPIO_PORTF_LOCK_R = 0x4C4F434B;   //  unlock GPIO Port F
+	GPIO_PORTF_CR_R = 0x1F;           // allow changes to PF4-0
+	GPIO_PORTF_DIR_R |= 0x07;					//Set PF0-2 to be outputs
+	GPIO_PORTF_AFSEL_R = 0x00;				// Turn off Alt Func.
+	GPIO_PORTF_DEN_R |= 0x07;					//Set PF2 to Digital
+}
+
+uint32_t Convert(uint32_t input){
+  return 0;
+}
