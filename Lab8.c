@@ -39,7 +39,7 @@ uint32_t Convert(uint32_t input);
 uint32_t Data;        // 12-bit ADC
 uint32_t Position;    // 32-bit fixed-point 0.001 cm
 
-int main(void){      // single step this program and look at Data
+int main1(void){      // single step this program and look at Data
   TExaS_Init();       // Bus clock is 80 MHz 
   ADC_Init();         // turn on ADC, set channel to 1
   while(1){                
@@ -49,13 +49,14 @@ int main(void){      // single step this program and look at Data
 
 int main2(void){
   TExaS_Init();       // Bus clock is 80 MHz 
-  ADC_Init();         // turn on ADC, set channel to 1
+	PortF_Init();
+	ADC_Init();         // turn on ADC, set channel to 1
   ST7735_InitR(INITR_REDTAB); 
-  PortF_Init();
+  
   while(1){           // use scope to measure execution time for ADC_In and LCD_OutDec           
-    PF2 = 0x04;       // Profile ADC
-    Data = ADC_In();  // sample 12-bit channel 1
-    PF2 = 0x00;       // end of ADC Profile
+   PF2 = 0x04;       // Profile ADC
+   Data = ADC_In();  // sample 12-bit channel 1
+   PF2 = 0x00;       // end of ADC Profile
     ST7735_SetCursor(0,0);
     PF1 = 0x02;       // Profile LCD
     LCD_OutDec(Data); 
@@ -67,9 +68,11 @@ int main2(void){
 
 int main3(void){ 
   TExaS_Init();         // Bus clock is 80 MHz 
-  ST7735_InitR(INITR_REDTAB); 
   PortF_Init();
-  ADC_Init();         // turn on ADC, set channel to 1
+	ADC_Init();         // turn on ADC, set channel to 1
+	ST7735_InitR(INITR_REDTAB); 
+  
+  
   while(1){  
     PF2 ^= 0x04;      // Heartbeat
     Data = ADC_In();  // sample 12-bit channel 1
@@ -84,25 +87,28 @@ int main3(void){
     PF1 = 0;          // end of LCD Profile
   }
 }   
-int main1(void){
+int main(void){
 	
 	//initialize the PLL, LCD
 	
   DisableInterrupts();
 	TExaS_Init();
-	SysTick_Init(40);
+	PortF_Init();
+	SysTick_Init();
 	ADC_Init();
+	ST7735_InitR(INITR_REDTAB);
 	EnableInterrupts();
 	while (1){
-		while (ADCStatus != 1){
-		}
-	//read ADCMail
+		while (ADCStatus == 1){
+		
+		Data = ADCMail;
 		ADCStatus = 0;
-	//math to convert ADCMail to fixed point number
-	//send result to LCD function
+		Position = Convert(Data);
+		ST7735_SetCursor(0,0);
 		LCD_OutFix(Position);
-	
-	
+		ST7735_OutString("cm");
+		PF2 ^= 0x02;
+		}
 	}
 }
 
@@ -118,5 +124,8 @@ volatile unsigned long delay;
 }
 
 uint32_t Convert(uint32_t input){
-  return 0;
+  Position = (36225*input-146360000)/1000;
+	
+	
+	return Position;
 }
