@@ -1,5 +1,5 @@
 ; Print.s
-; Student names: change this to your names or look very silly
+; Student names: John Sigmon and Neel Kattumadam
 ; Last modification date: change this to the last modification date or look very silly
 ; Runs on LM4F120 or TM4C123
 ; EE319K lab 7 device driver for any LCD
@@ -9,12 +9,15 @@
 ; ST7735_OutChar   outputs a single 8-bit ASCII character
 ; ST7735_OutString outputs a null-terminated string 
 
+DATA EQU	0
+NUM EQU		10000	
     IMPORT   ST7735_OutChar
     IMPORT   ST7735_OutString
     EXPORT   LCD_OutDec
     EXPORT   LCD_OutFix
 
     AREA    |.text|, CODE, READONLY, ALIGN=2
+	PRESERVE8
     THUMB
 
   
@@ -24,10 +27,34 @@
 ; Input: R0 (call by value) 32-bit unsigned number
 ; Output: none
 ; Invariables: This function must not permanently modify registers R4 to R11
+
 LCD_OutDec
+	MOV R12,R14
+	MOV R1,#0
+	PUSH {R1}
+	MOV R3,#10
+Loop	
+	UDIV R1,R0,R3
+	MUL R2,R1,R3
+	SUB R2,R0,R2
+	ADD R2,#0x30
+	PUSH {R2}
+	MOV R0,R1
+	CMP R0,#0
+	BNE Loop
+	
+Next  
+	POP {R0}
+	CMP R0,#0
+	BEQ Done
+	BL  ST7735_OutChar
+	B   Next
+	  
+Done	
+	MOV R14,R12
 
-
-      BX  LR
+    BX  LR
+	
 ;* * * * * * * * End of LCD_OutDec * * * * * * * *
 
 ; -----------------------LCD _OutFix----------------------
@@ -43,11 +70,54 @@ LCD_OutDec
 ;       R0>9999, then output "*.*** "
 ; Invariables: This function must not permanently modify registers R4 to R11
 LCD_OutFix
+	LDR R1,=NUM
+	CMP R0, R1
+	BHS Large
 
-     BX   LR
+	MOV R3, #10
+	MOV R12, #4
+NZero
+    UDIV R1, R0, R3
+	MUL R2, R1, R3
+	SUB R2, R0, R2
+	ADD R2, #0x30
+	PUSH {R2}
+	MOV R0, R1
+	SUBS R12, #1
+	BNE NZero  
+
+	MOV R12,R14
+	POP {R0}
+	BL ST7735_OutChar
+	LDR R0, =0x2E
+	BL ST7735_OutChar
+	POP {R0}
+	BL ST7735_OutChar
+	POP {R0}
+	BL ST7735_OutChar
+	POP {R0}
+	BL ST7735_OutChar
+	MOV R14,R12
+
+	BX LR
+Large
+	LDR R0, =0x2A
+	MOV R12,R14
+	BL ST7735_OutChar
+	LDR R0, =0x2E
+	BL ST7735_OutChar
+	LDR R0, =0x2A
+	BL ST7735_OutChar
+	LDR R0, =0x2A
+	BL ST7735_OutChar
+	LDR R0, =0x2A
+	BL ST7735_OutChar
+	MOV R14,R12
+	
+    BX   LR
  
-     ALIGN
+    ALIGN
 ;* * * * * * * * End of LCD_OutFix * * * * * * * *
 
-     ALIGN                           ; make sure the end of this section is aligned
-     END                             ; end of file
+	ALIGN                           ; make sure the end of this section is aligned
+    END                             ; end of file
